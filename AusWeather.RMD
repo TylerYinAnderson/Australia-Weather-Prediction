@@ -1,0 +1,89 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(data.table)
+library(tidyverse)
+library(plotly)
+
+weather <- fread("weatherAUS.csv", data.table = FALSE)
+```
+
+```{r}
+weather.sydney <- 
+  weather %>% 
+  filter(Location == "Sydney")
+
+weather.sydney$Date <- as.Date(weather.sydney$Date)
+weather.sydney$RainTomorrow <- as.factor(weather.sydney$RainTomorrow)
+weather.sydney$RainTomorrow[is.na(weather.sydney$RainTomorrow)] <- as.factor("No")
+```
+
+```{r}
+weather.sydney %>% 
+  ggplot(aes(x = Rainfall)) + geom_histogram(binwidth = 3)
+```
+
+```{r}
+norainy.day <- 
+  weather.sydney %>% filter(Rainfall == 0) %>% nrow()
+paste0(norainy.day/nrow(weather.sydney) * 100, "%" )
+```
+
+```{r}
+prop.table(table(weather.sydney$RainTomorrow))
+```
+
+```{r}
+interactive_plot <- ggplot(weather.sydney, aes(x=Date, y = MaxTemp)) +
+  geom_line() + geom_smooth()
+ggplotly(interactive_plot)
+```
+
+```{r}
+weather.sydney %>% 
+  ggplot(aes(x=RainTomorrow, y=Humidity3pm, colour = RainTomorrow, fill= RainTomorrow)) + geom_violin()
+```
+
+```{r}
+weather.sydney %>% 
+  ggplot(aes(x=RainTomorrow, y=Pressure3pm, colour = RainTomorrow, fill= RainTomorrow)) + 
+  geom_violin()
+```
+
+```{r}
+weather.sydney %>% 
+  ggplot(aes(x=RainTomorrow, y=Rainfall, colour = RainTomorrow, fill= RainTomorrow)) + geom_violin()
+```
+
+```{r}
+num_data <- weather.sydney %>% 
+  select(contains("Temp"), Rainfall, contains("Spedd"), 
+         contains("Humidity"), contains("Pressure"), RISK_MM)
+pairs(num_data)
+```
+
+```{r}
+weather.sydney %>% 
+  ggplot(aes(x=Humidity3pm, y = Rainfall)) + 
+  geom_point() + geom_smooth(method = "lm")
+```
+
+```{r}
+humid_Tomorrowrain <- 
+  weather.sydney %>% 
+  select(Date, Humidity3pm, RainToday, RainTomorrow, Rainfall) %>% 
+  transform(Tomorrow.Rainfall = c(Rainfall[-1], NA))
+
+head(humid_Tomorrowrain)
+```
+
+```{r}
+humid_Tomorrowrain %>% 
+  ggplot(aes(x = Humidity3pm, y = Tomorrow.Rainfall)) + 
+  geom_point() + geom_smooth(method='lm')
+```
+
